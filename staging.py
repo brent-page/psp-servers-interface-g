@@ -12,15 +12,14 @@ SWEAP_prefix = 'http://sweap.cfa.harvard.edu/pub/data/sci/sweap/'
 password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 
 # put FIELDS username and password here
-USERNAME = 
-PASSWORD = 
+USERNAME = 'brent_page'
+PASSWORD = 'flds@psp'
 
 password_mgr.add_password(None, FIELDS_prefix, USERNAME, PASSWORD)
 handler = urllib.request.HTTPBasicAuthHandler(password_mgr)
 
 opener = urllib.request.build_opener(handler)
 urllib.request.install_opener(opener)
-
 
 def get_products_FIELDS(level=1):
     """Get the FIELDS data products from a given level.
@@ -55,19 +54,37 @@ def get_paths_FIELDS(product, level=1, years=None, months=None, days=None, hours
         ver (None or int): If None, the function returns cdf urls for all data product versions.  If >= 0, returns the cdf urls for the specified version.
     """
 
-    years_regexp, months_regexp, days_regexp, hours_regexp, ver_regexp = assemble_regexps(
-        years, months, days, hours, ver)
+    latest_ver = False
+    if (ver == -1):
+        latest_ver = True
+        ver = None
+
+    years_regexp, months_regexp, days_regexp, hours_regexp, ver_regexp = assemble_regexps(years, months, days, hours, ver)
     if (level == 1):
         sc_id = 'spp'
     else:
         sc_id = 'psp'
     prefix_full = '{}l{:d}/{}/'.format(FIELDS_prefix, level, product)
-    patterns = [years_regexp, months_regexp, '^{}_fld_l{:d}_{}.*_[0-9]{{6}}{}{}{}\.cdf$'.format(sc_id, level, product, days_regexp, hours_regexp, ver_regexp)]
+    patterns = [years_regexp, months_regexp, r'^{}_fld_l{:d}_{}.*_[0-9]{{6}}{}{}{}\.cdf$'.format(sc_id, level, product, days_regexp, hours_regexp, ver_regexp)]
 
     pattern_results = get_pattern_results(prefix_full, patterns)
+    if latest_ver:
+        pattern_results = to_latest_ver(pattern_results)
 
-    return pattern_results[-1]
+    return pattern_results
 
+def to_latest_ver(pattern_results):
+    vers_collected = {}
+    latest_ver_files = []
+    for fname in pattern_results:
+        if fname[:-8] not in vers_collected.keys():
+            vers_collected[fname[:-8]] = [fname]
+        else:
+            vers_collected[fname[:-8]].append(fname)
+    for file_list in vers_collected.values():
+        file_list.sort()
+        latest_ver_files.append(file_list[-1])
+    return latest_ver_files
 
 def get_cdf(path):
     """Download and load a cdf file.
@@ -85,7 +102,6 @@ def get_cdf(path):
     os.remove(fname)
 
     return cdf
-
 
 def get_paths_SWEAP(subinst, subsubinst=None, level=2, years=None, months=None, days=None, ver=None):
     """Get the urls for a desired set of SWEAP cdfs.  
@@ -111,19 +127,18 @@ def get_paths_SWEAP(subinst, subsubinst=None, level=2, years=None, months=None, 
     # subsubinst is None means subinst must be spc
     if (subsubinst is None):
         prefix_full = '{}{}/L{:d}/'.format(SWEAP_prefix, subinst, level)
-        patterns = [years_regexp, months_regexp, '^psp_swp_spc_l{:d}i_[0-9]{{6}}{}_{}\.cdf$'.format(level, days_regexp, ver_regexp)]
+        patterns = [years_regexp, months_regexp, r'^psp_swp_spc_l{:d}i_[0-9]{{6}}{}_{}\.cdf$'.format(level, days_regexp, ver_regexp)]
     else:
         prefix_full = '{}{}/L{:d}/{}/'.format(SWEAP_prefix, subinst, level, subsubinst)
         # positioning of 'L3' in cdf file names is different for pad cdfs
         if ('pad' in subsubinst):
-            patterns = [years_regexp, months_regexp, '^psp_swp_{}_L{:d}_pad.*_[0-9]{{6}}{}_{}\.cdf$'.format(subsubinst[:7], level, days_regexp, ver_regexp)]
+            patterns = [years_regexp, months_regexp, r'^psp_swp_{}_L{:d}_pad.*_[0-9]{{6}}{}_{}\.cdf$'.format(subsubinst[:7], level, days_regexp, ver_regexp)]
         else:
-            patterns = [years_regexp, months_regexp, '^psp_swp_{}_L{:d}.*_[0-9]{{6}}{}_{}\.cdf$'.format(subsubinst, level, days_regexp, ver_regexp)]
+            patterns = [years_regexp, months_regexp, r'^psp_swp_{}_L{:d}.*_[0-9]{{6}}{}_{}\.cdf$'.format(subsubinst, level, days_regexp, ver_regexp)]
 
     pattern_results = get_pattern_results(prefix_full, patterns)
 
-    return pattern_results[-1]
-
+    return pattern_results
 
 def download_files(paths, directory=''):
     """Download the files pointed to by a set of urls into a local directory
@@ -143,7 +158,6 @@ def download_files(paths, directory=''):
             cdf_file = open(directory + fname, 'wb')
             cdf_file.write(response.read())
             cdf_file.close()
-
 
 # backend function
 def assemble_regexps(years, months, days, hours, ver):
@@ -219,4 +233,4 @@ def get_pattern_results(prefix_full, patterns):
                     result = pattern.findall(link.get('href'))
                     if len(result) > 0:
                         pattern_results[i + 1].append(pattern_result + result[0])
-    return pattern_results
+    return pattern_results[-1]
