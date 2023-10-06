@@ -12,8 +12,8 @@ SWEAP_prefix = 'http://sweap.cfa.harvard.edu/pub/data/sci/sweap/'
 password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 
 # put FIELDS username and password here
-USERNAME = 'brent_page'
-PASSWORD = 'flds@psp'
+USERNAME = ''
+PASSWORD = ''
 
 password_mgr.add_password(None, FIELDS_prefix, USERNAME, PASSWORD)
 handler = urllib.request.HTTPBasicAuthHandler(password_mgr)
