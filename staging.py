@@ -6,14 +6,14 @@ from bs4 import BeautifulSoup as BS
 import spacepy
 from spacepy import pycdf
 
-FIELDS_prefix = 'http://sprg.ssl.berkeley.edu/data/spp/data/sci/fields/'
+FIELDS_prefix = 'http://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/'
 SWEAP_prefix = 'http://sweap.cfa.harvard.edu/pub/data/sci/sweap/'
 
 password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 
 # put FIELDS username and password here
-USERNAME = 'brent_page'
-PASSWORD = 'flds@psp'
+USERNAME = ''
+PASSWORD = ''
 
 password_mgr.add_password(None, FIELDS_prefix, USERNAME, PASSWORD)
 handler = urllib.request.HTTPBasicAuthHandler(password_mgr)
@@ -122,6 +122,11 @@ def get_paths_SWEAP(subinst, subsubinst=None, level=2, years=None, months=None, 
         days (None, int, or list of ints): analogous documentation to that of 'years'.
         ver (None or int): If None, the function returns cdf urls for all data product versions.  If >= 0, returns the cdf urls for the specified version.
     """
+    latest_ver = False
+    if (ver == -1):
+        latest_ver = True
+        ver = None
+
     years_regexp, months_regexp, days_regexp, _, ver_regexp = assemble_regexps(years, months, days, None, ver)
 
     # subsubinst is None means subinst must be spc
@@ -137,6 +142,9 @@ def get_paths_SWEAP(subinst, subsubinst=None, level=2, years=None, months=None, 
             patterns = [years_regexp, months_regexp, r'^psp_swp_{}_L{:d}.*_[0-9]{{6}}{}_{}\.cdf$'.format(subsubinst, level, days_regexp, ver_regexp)]
 
     pattern_results = get_pattern_results(prefix_full, patterns)
+
+    if latest_ver:
+        pattern_results = to_latest_ver(pattern_results)
 
     return pattern_results
 
@@ -211,9 +219,11 @@ def assemble_regexps(years, months, days, hours, ver):
         hours_regexp = hours_regexp[:-1] + '|_)'
 
     if (ver is None):
-        ver_regexp = 'v[0][0-9]'
+        #latter option for FIELDS level 3 QTN 
+        ver_regexp = 'v(?:[0][0-9]|[0-9].[0-9])'
     else:
-        ver_regexp = 'v{:02d}'.format(ver)
+        #latter option for FIELDS level 3 QTN 
+        ver_regexp = 'v(?:{:02d}|{:1d}.[0-9])'.format(ver,ver)
 
     return years_regexp, months_regexp, days_regexp, hours_regexp, ver_regexp
 
