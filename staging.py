@@ -12,8 +12,8 @@ SWEAP_prefix = 'http://sweap.cfa.harvard.edu/pub/data/sci/sweap/'
 password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
 
 # put FIELDS username and password here
-USERNAME = ''
-PASSWORD = ''
+USERNAME = 'brent_page'
+PASSWORD = 'flds@psp'
 
 password_mgr.add_password(None, FIELDS_prefix, USERNAME, PASSWORD)
 handler = urllib.request.HTTPBasicAuthHandler(password_mgr)
@@ -72,19 +72,6 @@ def get_paths_FIELDS(product, level=1, years=None, months=None, days=None, hours
         pattern_results = to_latest_ver(pattern_results)
 
     return pattern_results
-
-def to_latest_ver(pattern_results):
-    vers_collected = {}
-    latest_ver_files = []
-    for fname in pattern_results:
-        if fname[:-8] not in vers_collected.keys():
-            vers_collected[fname[:-8]] = [fname]
-        else:
-            vers_collected[fname[:-8]].append(fname)
-    for file_list in vers_collected.values():
-        file_list.sort()
-        latest_ver_files.append(file_list[-1])
-    return latest_ver_files
 
 def get_cdf(path):
     """Download and load a cdf file.
@@ -244,3 +231,18 @@ def get_pattern_results(prefix_full, patterns):
                     if len(result) > 0:
                         pattern_results[i + 1].append(pattern_result + result[0])
     return pattern_results[-1]
+
+# backend function
+def to_latest_ver(pattern_results):
+    vers_collected = {}
+    latest_ver_files = []
+    for fname in pattern_results:
+        if fname[:-8] not in vers_collected.keys():
+            vers_collected[fname[:-8]] = [fname]
+        else:
+            vers_collected[fname[:-8]].append(fname)
+    for file_list in vers_collected.values():
+        file_list.sort()
+        latest_ver_files.append(file_list[-1])
+    return latest_ver_files
+
